@@ -1,3 +1,4 @@
+import { console } from "inspector"
 import { Database, DataSaver } from "./datasaver"
 
 export class JSONDatabase implements DataSaver {
@@ -8,7 +9,9 @@ export class JSONDatabase implements DataSaver {
   }
 
   updateDb(db: Database) {
-    Bun.write(this.file, JSON.stringify(db))
+    Bun.write(this.file, JSON.stringify(db), {
+      createPath: true
+    })
   }
 
   async create<T extends keyof Database, U = Database[T] extends (infer U)[] ? U : never>(collection: T, document: U): Promise<U> {
@@ -36,7 +39,11 @@ export class JSONDatabase implements DataSaver {
     let f = Bun.file(this.file)
 
     if (!await f.exists()) {
-      await Bun.write(this.file, "")
+      console.log("Happened")
+      await Bun.write(this.file, JSON.stringify({
+        todos: [],
+        test: []
+      }))
       f = Bun.file(this.file)
     }
 

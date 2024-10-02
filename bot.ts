@@ -1,5 +1,6 @@
 import { Api, Bot, RawApi, Context } from "grammy";
 import { DataSaver } from "./db/datasaver";
+import { console } from "inspector";
 
 
 export const initializeBot = (db: DataSaver) => {
@@ -15,6 +16,12 @@ export const initializeBot = (db: DataSaver) => {
   }
 
   const bot = new Bot(botToken)
+
+  bot.catch(e => {
+    console.log(e?.message)
+    console.log(e?.stack)
+  })
+
   initializeApp(bot, db)
 }
 
