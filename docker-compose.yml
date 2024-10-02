@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  bun-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # Not being used right now
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    command: bun start
+  cron-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    volumes:
+      - .:/app
+    depends_on:
+      - bun-app
+
