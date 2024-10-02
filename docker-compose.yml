@@ -8,6 +8,7 @@ services:
     environment:
       # Not being used right now
       PORT: 3000
+      DEBUG: "grammy*"
     ports:
       - "3000:3000"
     volumes:
@@ -17,6 +18,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.cron
+    environment:
+      DEBUG: "grammy*"
     volumes:
       - .:/app
     depends_on:

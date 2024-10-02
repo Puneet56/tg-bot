@@ -32,28 +32,33 @@ const menuMarkup = `
 <b>/listTodos</b>
 `
 
-function initializeApp(bot: Bot<Context, Api<RawApi>>, db: DataSaver) {
-  bot.command("hello", async (ctx) => {
-    validate(ctx.chatId.toString())
 
+
+
+function initializeApp(bot: Bot<Context, Api<RawApi>>, db: DataSaver) {
+  bot.use(async (ctx, next) => {
+    validate(ctx.chatId?.toString()!)
+
+    await next();
+  });
+
+
+
+  bot.command("hello", async (ctx) => {
     ctx.reply("world!")
   })
 
   bot.command("world", async (ctx) => {
-    validate(ctx.chatId.toString())
     ctx.reply("hello!")
   })
 
   bot.command("menu", async (ctx) => {
-    validate(ctx.chatId.toString())
-
     await ctx.reply(menuMarkup, {
       parse_mode: "HTML"
     });
   });
 
   bot.command("listTodos", async (ctx) => {
-    validate(ctx.chatId.toString())
     const todos = await db.getAll("todos")
 
     const resp = `Todos:
@@ -65,8 +70,7 @@ ${todos.map(t => t.title).join("\n\n")}
     await ctx.reply(resp)
   })
 
-  bot.on("message", async (ctx) => {
-    validate(ctx.chatId.toString())
+  bot.on("message:text", async (ctx) => {
     console.log(
       `Chat id: ${ctx.chatId} | ${ctx.from.first_name} wrote ${"text" in ctx.message ? ctx.message.text : ""
       }`,
@@ -74,14 +78,20 @@ ${todos.map(t => t.title).join("\n\n")}
 
     db.create("todos", {
       chatId: ctx.chatId,
-      title: "text" in ctx.message ? ctx.message.text : "",
+      title: ctx.message.text,
       id: crypto.randomUUID()
     })
 
+    await ctx.react("👍")
     await ctx.reply("Todo added")
   });
 
-  bot.start()
+  bot.start({
+    onStart() {
+      console.log('Bot started successfully')
+    },
+    timeout: 60
+  })
 }
 
 
