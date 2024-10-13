@@ -1,4 +1,3 @@
-import { console } from "inspector"
 import { Database, DataSaver } from "./datasaver"
 
 export class JSONDatabase implements DataSaver {
@@ -8,8 +7,37 @@ export class JSONDatabase implements DataSaver {
     this.file = "test-data/db.json"
   }
 
+  async updateOne<T extends keyof Database, U = Database[T] extends (infer U)[] ? U : never>(collection: T, id: string, data: U): Promise<U> {
+    const db = await this.getDb();
+
+    let chat = db[collection].find(e => e.id === id)
+
+    if (!chat) {
+      db[collection].push(data as any)
+    } else {
+      db[collection] = db[collection].map(e => {
+        if (e.id === id) {
+          e = data
+        }
+
+        return e
+      })
+    }
+
+    await this.updateDb(db)
+
+    return data
+  }
+
+  async getOne<T extends keyof Database, U = Database[T] extends (infer U)[] ? U : never>(collection: T, id: string): Promise<U> {
+    const db = await this.getDb()
+
+    // @ts-ignore
+    return (db[collection] || []).find(e => e.id === id)
+  }
+
   updateDb(db: Database) {
-    Bun.write(this.file, JSON.stringify(db), {
+    return Bun.write(this.file, JSON.stringify(db), {
       createPath: true
     })
   }
@@ -25,7 +53,7 @@ export class JSONDatabase implements DataSaver {
 
     //@ts-ignore
     db[collection].push(document)
-    this.updateDb(db)
+    await this.updateDb(db)
 
     return Promise.resolve(document)
   }
@@ -39,7 +67,6 @@ export class JSONDatabase implements DataSaver {
     let f = Bun.file(this.file)
 
     if (!await f.exists()) {
-      console.log("Happened")
       await Bun.write(this.file, JSON.stringify({
         todos: [],
         test: []
@@ -53,7 +80,7 @@ export class JSONDatabase implements DataSaver {
     } catch (error) {
       db = {
         todos: [],
-        test: []
+        chats: []
       }
     }
 

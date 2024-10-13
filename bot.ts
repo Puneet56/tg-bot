@@ -36,6 +36,9 @@ const menuMarkup = `
 
 
 function initializeApp(bot: Bot<Context, Api<RawApi>>, db: DataSaver) {
+  let aiChatId: null | string = null;
+
+
   bot.use(async (ctx, next) => {
     validate(ctx.chatId?.toString()!)
 
@@ -50,6 +53,16 @@ function initializeApp(bot: Bot<Context, Api<RawApi>>, db: DataSaver) {
 
   bot.command("world", async (ctx) => {
     ctx.reply("hello!")
+  })
+
+  bot.command("chat", async (ctx) => {
+    aiChatId = new Date().toISOString()
+    ctx.reply("Please enter you messages")
+  })
+
+  bot.command("end", async (ctx) => {
+    aiChatId = null
+    ctx.reply("AI chat ended")
   })
 
   bot.command("menu", async (ctx) => {
@@ -75,6 +88,40 @@ ${todos.map(t => t.title).join("\n\n")}
       `Chat id: ${ctx.chatId} | ${ctx.from.first_name} wrote ${"text" in ctx.message ? ctx.message.text : ""
       }`,
     );
+
+
+    if (aiChatId) {
+      let chat = await db.getOne("chats", aiChatId)
+      if (!chat) {
+        chat = {
+          id: aiChatId,
+          messages: []
+        }
+      }
+
+      chat.messages.push({ content: ctx.message.text, role: "user" })
+
+      const res = await fetch("http://localhost:11434/api/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          model: "llama3.2",
+          stream: false,
+          messages: chat.messages
+        })
+      })
+
+      const { message: data } = await res.json()
+      chat.messages.push(data)
+
+
+      await db.updateOne("chats", aiChatId, chat)
+
+      ctx.reply(data.content, {
+        // parse_mode: "MarkdownV2"
+      })
+
+      return
+    }
 
     db.create("todos", {
       chatId: ctx.chatId,
